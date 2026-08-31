@@ -1,29 +1,15 @@
-# Makefile - projeto Mandelbrot (serial, OpenMP, pthreads x2)
-#
-# macOS: o "gcc" do sistema e na verdade o clang da Apple, que nao aceita
-# -fopenmp. Instale o GCC real via Homebrew (brew install gcc) e compile com:
-#     make CC=gcc-14
-# (ajuste o numero da versao conforme a que o Homebrew instalar).
-#
-# Nao usamos -march=native de proposito: o binario precisa rodar em outra maquina.
+CC := $(shell ls /opt/homebrew/bin/gcc-[0-9]* /usr/local/bin/gcc-[0-9]* 2>/dev/null | head -n 1 || echo gcc)
 
-CC = gcc
-CFLAGS = -O2 -Wall -Wextra -std=c11
-OMPFLAG = -fopenmp
-LDLIBS = -lm
-
-TARGET = mandelbrot
-OBJS = mandelbrot.o
-
-.PHONY: all clean
-
-all: $(TARGET)
-
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OMPFLAG) -pthread -o $@ $(OBJS) $(LDLIBS)
+mandelbrot: mandelbrot.o
+	$(CC) mandelbrot.o -o mandelbrot -fopenmp -pthread -lm
 
 mandelbrot.o: mandelbrot.c
-	$(CC) $(CFLAGS) $(OMPFLAG) -pthread -c -o $@ mandelbrot.c
+	$(CC) -c mandelbrot.c -O2 -Wall -Wextra -std=c11 -fopenmp -pthread
+
+run: mandelbrot
+	./mandelbrot 800 800 1000 4
 
 clean:
-	rm -f $(TARGET) *.o *.pgm times.txt
+	rm -f mandelbrot *.o *.pgm times.txt
+
+.PHONY: run clean
