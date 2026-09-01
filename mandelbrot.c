@@ -35,6 +35,23 @@
 /* Capacidade do nome de arquivo montado com snprintf. */
 #define FILENAME_CAP 256
 
+/*
+ * Codigos de saida por categoria de erro. 0 (EXIT_SUCCESS) indica sucesso;
+ * qualquer outro valor identifica onde o programa parou:
+ *   2 EXIT_ARGS   - linha de comando invalida
+ *   3 EXIT_ALLOC  - falha de alocacao de memoria
+ *   4 EXIT_FILE   - falha de abertura, escrita ou fechamento de arquivo
+ *   5 EXIT_THREAD - falha na criacao, no join ou no mutex das threads
+ *   6 EXIT_CLOCK  - falha na leitura do relogio monotonico
+ */
+enum {
+    EXIT_ARGS   = 2,
+    EXIT_ALLOC  = 3,
+    EXIT_FILE   = 4,
+    EXIT_THREAD = 5,
+    EXIT_CLOCK  = 6
+};
+
 typedef struct {
     int width;
     int height;
@@ -56,7 +73,7 @@ static int parse_arg(const char *s, const char *name, long min_val,
     if (s == NULL || s[0] == '\0') {
         fprintf(stderr, "Erro: <%s> deve ser um numero inteiro valido, "
                         "recebido: \"\"\n", name);
-        return 1;
+        return EXIT_ARGS;
     }
 
     errno = 0;
@@ -65,22 +82,22 @@ static int parse_arg(const char *s, const char *name, long min_val,
     if (errno == ERANGE) {
         fprintf(stderr, "Erro: <%s> fora do intervalo representavel: \"%s\"\n",
                 name, s);
-        return 1;
+        return EXIT_ARGS;
     }
     if (end == s || *end != '\0') {
         fprintf(stderr, "Erro: <%s> deve ser um numero inteiro valido, "
                         "recebido: \"%s\"\n", name, s);
-        return 1;
+        return EXIT_ARGS;
     }
     if (v < min_val) {
         fprintf(stderr, "Erro: <%s> deve ser >= %ld, recebido: %ld\n",
                 name, min_val, v);
-        return 1;
+        return EXIT_ARGS;
     }
     if (v > max_val) {
         fprintf(stderr, "Erro: <%s> deve ser <= %ld, recebido: %ld\n",
                 name, max_val, v);
-        return 1;
+        return EXIT_ARGS;
     }
 
     *out = (int)v;
@@ -96,27 +113,27 @@ int parse_args(int argc, char **argv, Config *cfg)
     if (argc != 5) {
         fprintf(stderr,
                 "Uso: mandelbrot <largura> <altura> <max_iteracoes> <num_threads>\n");
-        return 1;
+        return EXIT_ARGS;
     }
 
     if (parse_arg(argv[1], "largura", 1, MAX_DIM, &cfg->width) != 0) {
-        return 1;
+        return EXIT_ARGS;
     }
     if (parse_arg(argv[2], "altura", 1, MAX_DIM, &cfg->height) != 0) {
-        return 1;
+        return EXIT_ARGS;
     }
     if (parse_arg(argv[3], "max_iteracoes", 1, INT_MAX, &cfg->max_iter) != 0) {
-        return 1;
+        return EXIT_ARGS;
     }
     if (parse_arg(argv[4], "num_threads", 1, MAX_THREADS,
                   &cfg->num_threads) != 0) {
-        return 1;
+        return EXIT_ARGS;
     }
 
     if ((size_t)cfg->width > SIZE_MAX / (size_t)cfg->height) {
         fprintf(stderr, "Erro: dimensoes muito grandes: %d x %d\n",
                 cfg->width, cfg->height);
-        return 1;
+        return EXIT_ARGS;
     }
 
     return 0;
@@ -258,13 +275,14 @@ int run_pthreads_block(const Config *cfg, unsigned char *img)
     BlockArg *args = NULL;
     int nthreads = cfg->num_threads;
     int base, rest, created = 0;
-    int i, y = 0, rc = 1;
+    int i, y = 0, rc = EXIT_THREAD;
 
     tids = (pthread_t *)malloc((size_t)nthreads * sizeof(*tids));
     args = (BlockArg *)malloc((size_t)nthreads * sizeof(*args));
     if (tids == NULL || args == NULL) {
         fprintf(stderr, "Erro: falha ao alocar estruturas para %d threads\n",
                 nthreads);
+        rc = EXIT_ALLOC;
         goto cleanup;
     }
 
@@ -293,14 +311,14 @@ int run_pthreads_block(const Config *cfg, unsigned char *img)
     }
 
     /* Junta TODAS as threads criadas, mesmo se a criacao falhou no meio. */
-    rc = (created == nthreads) ? 0 : 1;
+    rc = (created == nthreads) ? 0 : EXIT_THREAD;
     for (i = 0; i < created; i++) {
         int err = pthread_join(tids[i], NULL);
 
         if (err != 0) {
             fprintf(stderr, "Erro: falha ao aguardar a thread %d: %s\n",
                     i, strerror(err));
-            rc = 1;
+            rc = EXIT_THREAD;
         }
     }
 
@@ -369,7 +387,7 @@ int run_pthreads_queue(const Config *cfg, unsigned char *img)
     QueueShared sh;
     int nthreads = cfg->num_threads;
     int created = 0;
-    int i, err, rc = 1;
+    int i, err, rc = EXIT_THREAD;
 
     sh.cfg = cfg;
     sh.img = img;
@@ -379,13 +397,14 @@ int run_pthreads_queue(const Config *cfg, unsigned char *img)
     if (err != 0) {
         fprintf(stderr, "Erro: falha ao inicializar o mutex: %s\n",
                 strerror(err));
-        return 1;
+        return EXIT_THREAD;
     }
 
     tids = (pthread_t *)malloc((size_t)nthreads * sizeof(*tids));
     if (tids == NULL) {
         fprintf(stderr, "Erro: falha ao alocar estruturas para %d threads\n",
                 nthreads);
+        rc = EXIT_ALLOC;
         goto cleanup;
     }
 
@@ -400,14 +419,14 @@ int run_pthreads_queue(const Config *cfg, unsigned char *img)
         created++;
     }
 
-    rc = (created == nthreads) ? 0 : 1;
+    rc = (created == nthreads) ? 0 : EXIT_THREAD;
     for (i = 0; i < created; i++) {
         err = pthread_join(tids[i], NULL);
 
         if (err != 0) {
             fprintf(stderr, "Erro: falha ao aguardar a thread %d: %s\n",
                     i, strerror(err));
-            rc = 1;
+            rc = EXIT_THREAD;
         }
     }
 
@@ -452,13 +471,14 @@ int write_image(const char *filename, const unsigned char *img,
     FILE *fp = NULL;
     char *line = NULL;
     size_t cap = (size_t)width * 4u + 2u;
-    int rc = 1;
+    int rc = EXIT_FILE;
     int y;
 
     line = (char *)malloc(cap);
     if (line == NULL) {
         fprintf(stderr, "Erro: falha ao alocar buffer de linha (%zu bytes)\n",
                 cap);
+        rc = EXIT_ALLOC;
         goto cleanup;
     }
 
@@ -524,12 +544,12 @@ static int write_output(const Config *cfg, const unsigned char *img,
 
     if (n < 0) {
         fprintf(stderr, "Erro: falha ao montar o nome do arquivo\n");
-        return 1;
+        return EXIT_FILE;
     }
     if ((size_t)n >= sizeof(filename)) {
         fprintf(stderr, "Erro: nome de arquivo truncado para a versao \"%s\"\n",
                 suffix);
-        return 1;
+        return EXIT_FILE;
     }
 
     return write_image(filename, img, cfg->width, cfg->height);
@@ -589,21 +609,21 @@ static int write_times(const char *filename)
     if (fp == NULL) {
         fprintf(stderr, "Erro: nao foi possivel abrir \"%s\" para escrita: %s\n",
                 filename, strerror(errno));
-        return 1;
+        return EXIT_FILE;
     }
 
     for (i = 0; i < IMPLS_READY; i++) {
         if (fprintf(fp, "%-12s%.6f\n", IMPL_NAMES[i], g_times[i]) < 0) {
             fprintf(stderr, "Erro: falha ao escrever em \"%s\"\n", filename);
             fclose(fp);
-            return 1;
+            return EXIT_FILE;
         }
     }
 
     if (fclose(fp) != 0) {
         fprintf(stderr, "Erro: falha ao fechar \"%s\": %s\n",
                 filename, strerror(errno));
-        return 1;
+        return EXIT_FILE;
     }
 
     return 0;
@@ -637,17 +657,17 @@ static int run_and_check(const Config *cfg, int impl,
         break;
     default:
         fprintf(stderr, "Erro interno: implementacao desconhecida (%d)\n", impl);
-        return 1;
+        return EXIT_THREAD;
     }
     t1 = now_seconds();
 
     if (err != 0) {
         fprintf(stderr, "Erro: a implementacao \"%s\" falhou\n",
                 IMPL_NAMES[impl]);
-        return 1;
+        return err;
     }
     if (t0 < 0.0 || t1 < 0.0) {
-        return 1;
+        return EXIT_CLOCK;
     }
     g_times[impl] = t1 - t0;
 
@@ -667,16 +687,18 @@ int main(int argc, char **argv)
     unsigned char *img_work = NULL;
     size_t npixels;
     double t0, t1;
-    int rc = 1;
+    int rc;
 
-    if (parse_args(argc, argv, &cfg) != 0) {
-        return 1;
+    rc = parse_args(argc, argv, &cfg);
+    if (rc != 0) {
+        return rc;
     }
 
     lut_init();
 
     npixels = (size_t)cfg.width * (size_t)cfg.height;
 
+    rc = EXIT_ALLOC;
     img_ref = (unsigned char *)malloc(npixels);
     if (img_ref == NULL) {
         fprintf(stderr, "Erro: falha ao alocar %zu bytes para a imagem de "
@@ -697,25 +719,30 @@ int main(int argc, char **argv)
     t1 = now_seconds();
 
     if (t0 < 0.0 || t1 < 0.0) {
+        rc = EXIT_CLOCK;
         goto cleanup;
     }
     g_times[IMPL_SERIAL] = t1 - t0;
 
-    if (write_output(&cfg, img_ref, IMPL_NAMES[IMPL_SERIAL]) != 0) {
+    rc = write_output(&cfg, img_ref, IMPL_NAMES[IMPL_SERIAL]);
+    if (rc != 0) {
         goto cleanup;
     }
 
-    if (run_and_check(&cfg, IMPL_OPENMP, img_work, img_ref, npixels) != 0 ||
-        run_and_check(&cfg, IMPL_PTHREADS1, img_work, img_ref, npixels) != 0 ||
-        run_and_check(&cfg, IMPL_PTHREADS2, img_work, img_ref, npixels) != 0) {
+    rc = run_and_check(&cfg, IMPL_OPENMP, img_work, img_ref, npixels);
+    if (rc != 0) {
+        goto cleanup;
+    }
+    rc = run_and_check(&cfg, IMPL_PTHREADS1, img_work, img_ref, npixels);
+    if (rc != 0) {
+        goto cleanup;
+    }
+    rc = run_and_check(&cfg, IMPL_PTHREADS2, img_work, img_ref, npixels);
+    if (rc != 0) {
         goto cleanup;
     }
 
-    if (write_times("times.txt") != 0) {
-        goto cleanup;
-    }
-
-    rc = 0;
+    rc = write_times("times.txt");
 
 cleanup:
     free(img_work);
