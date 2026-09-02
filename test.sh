@@ -180,7 +180,7 @@ done
 printf '\n=== BLOCO D: benchmark (1000 x 1000, 5000 iteracoes) ===\n\n'
 # ------------------------------------------------------------------
 
-get_time() { awk -v k="$1" '$1 == k { print $2 }' times.txt; }
+get_time() { awk -v k="$1" '{ n = tolower($1); sub(/:$/, "", n); if (n == k) { v = $2; sub(/s$/, "", v); print v } }' times.txt; }
 
 printf '%-10s %10s %10s %10s %10s\n' threads serial openmp pthreads1 pthreads2
 printf '%.0s-' 1 2 3 4 5 6 7 8 9 10; printf '%.0s-' 1 2 3 4 5 6 7 8 9 10

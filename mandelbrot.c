@@ -1,15 +1,6 @@
-/*
- * mandelbrot.c - Conjunto de Mandelbrot em quatro implementacoes.
- *
- * Bloco 3: as quatro implementacoes (serial, OpenMP, pthreads por blocos
- * e pthreads com fila dinamica), todas chamando o mesmo compute_row().
- *
- * Uso: mandelbrot <largura> <altura> <max_iteracoes> <num_threads>
- */
 
 #include <errno.h>
 #include <limits.h>
-#include <omp.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -19,31 +10,18 @@
 
 #define LOGIN "lada"
 
-/* Regiao do plano complexo. */
 #define RE_MIN (-2.0)
 #define IM_MIN (-1.5)
 #define RE_LEN (3.0)
 #define IM_LEN (3.0)
 
-/* Limites superiores sãos para os argumentos. */
 #define MAX_DIM 100000
 #define MAX_THREADS 1024
 
-/* Buffer de E/S de 1 MB para a escrita do arquivo. */
 #define IO_BUF_SIZE (1024 * 1024)
 
-/* Capacidade do nome de arquivo montado com snprintf. */
 #define FILENAME_CAP 256
 
-/*
- * Codigos de saida por categoria de erro. 0 (EXIT_SUCCESS) indica sucesso;
- * qualquer outro valor identifica onde o programa parou:
- *   2 EXIT_ARGS   - linha de comando invalida
- *   3 EXIT_ALLOC  - falha de alocacao de memoria
- *   4 EXIT_FILE   - falha de abertura, escrita ou fechamento de arquivo
- *   5 EXIT_THREAD - falha na criacao, no join ou no mutex das threads
- *   6 EXIT_CLOCK  - falha na leitura do relogio monotonico
- */
 enum {
     EXIT_ARGS   = 2,
     EXIT_ALLOC  = 3,
@@ -59,44 +37,23 @@ typedef struct {
     int num_threads;
 } Config;
 
-/*
- * Le um argumento inteiro obrigatorio: converte a string exigindo consumo
- * total e valida a faixa [min_val, max_val].
- * Imprime mensagem especifica em stderr e retorna != 0 em caso de erro.
- */
 static int parse_arg(const char *s, const char *name, long min_val,
                      long max_val, int *out)
 {
     char *end = NULL;
     long v;
 
-    if (s == NULL || s[0] == '\0') {
-        fprintf(stderr, "Erro: <%s> deve ser um numero inteiro valido, "
-                        "recebido: \"\"\n", name);
-        return EXIT_ARGS;
-    }
-
     errno = 0;
     v = strtol(s, &end, 10);
 
-    if (errno == ERANGE) {
-        fprintf(stderr, "Erro: <%s> fora do intervalo representavel: \"%s\"\n",
-                name, s);
-        return EXIT_ARGS;
-    }
-    if (end == s || *end != '\0') {
+    if (errno == ERANGE || end == s || *end != '\0') {
         fprintf(stderr, "Erro: <%s> deve ser um numero inteiro valido, "
                         "recebido: \"%s\"\n", name, s);
         return EXIT_ARGS;
     }
-    if (v < min_val) {
-        fprintf(stderr, "Erro: <%s> deve ser >= %ld, recebido: %ld\n",
-                name, min_val, v);
-        return EXIT_ARGS;
-    }
-    if (v > max_val) {
-        fprintf(stderr, "Erro: <%s> deve ser <= %ld, recebido: %ld\n",
-                name, max_val, v);
+    if (v < min_val || v > max_val) {
+        fprintf(stderr, "Erro: <%s> deve estar entre %ld e %ld, recebido: %ld\n",
+                name, min_val, max_val, v);
         return EXIT_ARGS;
     }
 
@@ -104,10 +61,6 @@ static int parse_arg(const char *s, const char *name, long min_val,
     return 0;
 }
 
-/*
- * Valida a linha de comando e preenche cfg.
- * Retorna 0 em sucesso; != 0 em erro (mensagem ja impressa em stderr).
- */
 int parse_args(int argc, char **argv, Config *cfg)
 {
     if (argc != 5) {
@@ -139,10 +92,6 @@ int parse_args(int argc, char **argv, Config *cfg)
     return 0;
 }
 
-/*
- * Numero de iteracoes de z = z^2 + c (z0 = 0) ate |z|^2 > 4, limitado a
- * max_iter. Sem sqrt: 3 multiplicacoes por iteracao.
- */
 static inline int mandelbrot_point(double cr, double ci, int max_iter)
 {
     double zr = 0.0, zi = 0.0;
@@ -160,23 +109,12 @@ static inline int mandelbrot_point(double cr, double ci, int max_iter)
     return iter;
 }
 
-/*
- * Mapeia a contagem de iteracoes para [0, 255] com aritmetica inteira,
- * garantindo resultado bit-a-bit deterministico.
- */
 static inline unsigned char normalize(int iter, int max_iter)
 {
     long v = ((long)iter * 255L) / (long)max_iter;
     return (unsigned char)v;
 }
 
-/*
- * Calcula a linha y inteira em img[y * width + x].
- *
- * Este e o UNICO ponto de calculo do programa: as quatro implementacoes
- * (serial, OpenMP, pthreads estatico e pthreads dinamico) chamam exatamente
- * esta funcao, o que garante saidas byte-a-byte identicas.
- */
 void compute_row(const Config *cfg, unsigned char *img, int y)
 {
     const int width = cfg->width;
@@ -192,10 +130,6 @@ void compute_row(const Config *cfg, unsigned char *img, int y)
     }
 }
 
-/*
- * Implementacao serial: percorre todas as linhas em ordem, uma de cada vez.
- * E a referencia de corretude para as versoes paralelas.
- */
 void run_serial(const Config *cfg, unsigned char *img)
 {
     int y;
@@ -205,24 +139,6 @@ void run_serial(const Config *cfg, unsigned char *img)
     }
 }
 
-/* ------------------------------------------------------------------ */
-/* Implementacao 2: OpenMP                                              */
-/* ------------------------------------------------------------------ */
-
-/*
- * Paraleliza o laco de linhas com OpenMP.
- *
- * schedule(dynamic, 1) e nao static: o custo de uma linha do Mandelbrot e
- * altamente desbalanceado. Linhas que cortam o interior do conjunto rodam
- * max_iter iteracoes em cada pixel, enquanto linhas das bordas escapam em
- * poucas iteracoes — uma diferenca de ordens de magnitude. Com static as
- * threads que recebem as faixas baratas terminam cedo e ficam ociosas ate a
- * mais lenta acabar; com dynamic cada thread pega a proxima linha livre assim
- * que termina a anterior, e a carga se equilibra sozinha.
- *
- * Nenhuma sincronizacao e necessaria: cada iteracao escreve em posicoes
- * disjuntas de img (a linha y) e nao le nada escrito por outra thread.
- */
 void run_openmp(const Config *cfg, unsigned char *img)
 {
     int y;
@@ -233,9 +149,36 @@ void run_openmp(const Config *cfg, unsigned char *img)
     }
 }
 
-/* ------------------------------------------------------------------ */
-/* Implementacao 3: pthreads com divisao estatica por blocos de linhas  */
-/* ------------------------------------------------------------------ */
+static int spawn_and_join(pthread_t *tids, int n, void *(*worker)(void *),
+                          void *arg, size_t stride)
+{
+    int i, created = 0, rc;
+
+    for (i = 0; i < n; i++) {
+        int err = pthread_create(&tids[i], NULL, worker,
+                                 (char *)arg + (size_t)i * stride);
+
+        if (err != 0) {
+            fprintf(stderr, "Erro: falha ao criar a thread %d: %s\n",
+                    i, strerror(err));
+            break;
+        }
+        created++;
+    }
+
+    rc = (created == n) ? 0 : EXIT_THREAD;
+    for (i = 0; i < created; i++) {
+        int err = pthread_join(tids[i], NULL);
+
+        if (err != 0) {
+            fprintf(stderr, "Erro: falha ao aguardar a thread %d: %s\n",
+                    i, strerror(err));
+            rc = EXIT_THREAD;
+        }
+    }
+
+    return rc;
+}
 
 typedef struct {
     const Config *cfg;
@@ -256,25 +199,12 @@ static void *block_worker(void *arg)
     return NULL;
 }
 
-/*
- * Divide as linhas em intervalos contiguos, um por thread.
- *
- * Esta e a estrategia que EXPOE o desbalanceamento do Mandelbrot: a thread que
- * ficar com as linhas centrais (que atravessam o interior do conjunto) demora
- * muito mais que as threads das bordas, e todas as outras ficam paradas no
- * join esperando por ela. O tempo total e ditado pela thread mais lenta.
- *
- * O resto da divisao e espalhado: as primeiras (height % nthreads) threads
- * recebem uma linha a mais, em vez de acumular tudo na ultima.
- *
- * Retorna 0 em sucesso; != 0 em erro (mensagem em stderr).
- */
 int run_pthreads_block(const Config *cfg, unsigned char *img)
 {
     pthread_t *tids = NULL;
     BlockArg *args = NULL;
     int nthreads = cfg->num_threads;
-    int base, rest, created = 0;
+    int base, rest;
     int i, y = 0, rc = EXIT_THREAD;
 
     tids = (pthread_t *)malloc((size_t)nthreads * sizeof(*tids));
@@ -295,42 +225,17 @@ int run_pthreads_block(const Config *cfg, unsigned char *img)
         args[i].cfg = cfg;
         args[i].img = img;
         args[i].y_start = y;
-        args[i].y_end = y + count;   /* intervalo vazio se nthreads > height */
+        args[i].y_end = y + count;
         y += count;
     }
 
-    for (i = 0; i < nthreads; i++) {
-        int err = pthread_create(&tids[i], NULL, block_worker, &args[i]);
-
-        if (err != 0) {
-            fprintf(stderr, "Erro: falha ao criar a thread %d: %s\n",
-                    i, strerror(err));
-            break;
-        }
-        created++;
-    }
-
-    /* Junta TODAS as threads criadas, mesmo se a criacao falhou no meio. */
-    rc = (created == nthreads) ? 0 : EXIT_THREAD;
-    for (i = 0; i < created; i++) {
-        int err = pthread_join(tids[i], NULL);
-
-        if (err != 0) {
-            fprintf(stderr, "Erro: falha ao aguardar a thread %d: %s\n",
-                    i, strerror(err));
-            rc = EXIT_THREAD;
-        }
-    }
+    rc = spawn_and_join(tids, nthreads, block_worker, args, sizeof(*args));
 
 cleanup:
     free(args);
     free(tids);
     return rc;
 }
-
-/* ------------------------------------------------------------------ */
-/* Implementacao 4: pthreads com fila dinamica de linhas                */
-/* ------------------------------------------------------------------ */
 
 typedef struct {
     const Config *cfg;
@@ -339,12 +244,6 @@ typedef struct {
     pthread_mutex_t mutex;
 } QueueShared;
 
-/*
- * A secao critica contem APENAS a leitura e o incremento do contador.
- * O compute_row fica deliberadamente fora do mutex: se o calculo acontecesse
- * com o lock na mao, as threads se revezariam uma de cada vez e o programa
- * seria uma execucao serial com o custo extra da contencao.
- */
 static void *queue_worker(void *arg)
 {
     QueueShared *sh = (QueueShared *)arg;
@@ -367,27 +266,12 @@ static void *queue_worker(void *arg)
     return NULL;
 }
 
-/*
- * Fila dinamica: um contador compartilhado com a proxima linha a processar.
- * Cada thread pega uma linha, calcula, e volta para pegar a proxima.
- *
- * Esta estrategia balanceia a carga automaticamente: a thread que pegar uma
- * linha barata volta imediatamente para a fila e pega outra, em vez de ficar
- * ociosa como acontece na divisao estatica por blocos.
- *
- * O custo e a contencao no mutex, desprezivel aqui: a granularidade do
- * trabalho (uma linha inteira, milhares de pixels) e ordens de magnitude
- * maior que o custo de travar e destravar o lock uma vez por linha.
- *
- * Retorna 0 em sucesso; != 0 em erro (mensagem em stderr).
- */
 int run_pthreads_queue(const Config *cfg, unsigned char *img)
 {
     pthread_t *tids = NULL;
     QueueShared sh;
     int nthreads = cfg->num_threads;
-    int created = 0;
-    int i, err, rc = EXIT_THREAD;
+    int err, rc = EXIT_THREAD;
 
     sh.cfg = cfg;
     sh.img = img;
@@ -408,27 +292,7 @@ int run_pthreads_queue(const Config *cfg, unsigned char *img)
         goto cleanup;
     }
 
-    for (i = 0; i < nthreads; i++) {
-        err = pthread_create(&tids[i], NULL, queue_worker, &sh);
-
-        if (err != 0) {
-            fprintf(stderr, "Erro: falha ao criar a thread %d: %s\n",
-                    i, strerror(err));
-            break;
-        }
-        created++;
-    }
-
-    rc = (created == nthreads) ? 0 : EXIT_THREAD;
-    for (i = 0; i < created; i++) {
-        err = pthread_join(tids[i], NULL);
-
-        if (err != 0) {
-            fprintf(stderr, "Erro: falha ao aguardar a thread %d: %s\n",
-                    i, strerror(err));
-            rc = EXIT_THREAD;
-        }
-    }
+    rc = spawn_and_join(tids, nthreads, queue_worker, &sh, 0);
 
 cleanup:
     free(tids);
@@ -436,14 +300,6 @@ cleanup:
     return rc;
 }
 
-/* ------------------------------------------------------------------ */
-/* Escrita rapida do arquivo PGM (apenas o raster, um valor por coluna) */
-/* ------------------------------------------------------------------ */
-
-/*
- * Tabela de conversao inteiro -> texto. Montada uma unica vez por lut_init(),
- * evita qualquer chamada de formatacao durante a escrita.
- */
 static char g_lut[256][4];
 static uint8_t g_lut_len[256];
 
@@ -456,15 +312,6 @@ static void lut_init(void)
     }
 }
 
-/*
- * Grava a imagem em filename: uma linha de texto por linha da imagem,
- * valores separados por um unico espaco, sem espaco no fim da linha.
- *
- * O buffer de linha e montado a mao e despejado com UM fwrite por linha;
- * com fprintf por pixel a escrita dominaria o tempo total do programa.
- *
- * Retorna 0 em sucesso; != 0 em erro (mensagem em stderr).
- */
 int write_image(const char *filename, const unsigned char *img,
                 int width, int height)
 {
@@ -531,44 +378,16 @@ cleanup:
     return rc;
 }
 
-/*
- * Monta "mandelbrot_<LOGIN>_<sufixo>.pgm" e grava a imagem nele.
- * Retorna 0 em sucesso; != 0 em erro (mensagem em stderr).
- */
 static int write_output(const Config *cfg, const unsigned char *img,
                         const char *suffix)
 {
     char filename[FILENAME_CAP];
-    int n = snprintf(filename, sizeof(filename), "mandelbrot_%s_%s.pgm",
-                     LOGIN, suffix);
 
-    if (n < 0) {
-        fprintf(stderr, "Erro: falha ao montar o nome do arquivo\n");
-        return EXIT_FILE;
-    }
-    if ((size_t)n >= sizeof(filename)) {
-        fprintf(stderr, "Erro: nome de arquivo truncado para a versao \"%s\"\n",
-                suffix);
-        return EXIT_FILE;
-    }
+    snprintf(filename, sizeof(filename), "mandelbrot_%s_%s.pgm", LOGIN, suffix);
 
     return write_image(filename, img, cfg->width, cfg->height);
 }
 
-/* ------------------------------------------------------------------ */
-/* Medicao de tempo                                                     */
-/* ------------------------------------------------------------------ */
-
-/*
- * Relogio de parede para medir o tempo de execucao do calculo.
- *
- * CLOCK_MONOTONIC e obrigatorio aqui: clock() devolveria tempo de CPU, que e
- * a SOMA do tempo gasto por todas as threads. Com ele, as versoes paralelas
- * apareceriam mais lentas que a serial e o relatorio de speedup ficaria
- * invertido.
- *
- * Retorna o instante atual em segundos; -1.0 em caso de falha.
- */
 double now_seconds(void)
 {
     struct timespec ts;
@@ -582,25 +401,18 @@ double now_seconds(void)
     return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
 }
 
-/* ------------------------------------------------------------------ */
-/* Coleta e escrita dos tempos                                          */
-/* ------------------------------------------------------------------ */
-
 enum { IMPL_SERIAL, IMPL_OPENMP, IMPL_PTHREADS1, IMPL_PTHREADS2, NUM_IMPLS };
 
 static const char *IMPL_NAMES[NUM_IMPLS] = {
     "serial", "openmp", "pthreads1", "pthreads2"
 };
 
+static const char *IMPL_LABELS[NUM_IMPLS] = {
+    "Serial", "OpenMP", "Pthreads1", "Pthreads2"
+};
+
 static double g_times[NUM_IMPLS];
 
-/* Todas as quatro implementacoes estao prontas. */
-#define IMPLS_READY NUM_IMPLS
-
-/*
- * Escreve times.txt: uma linha por implementacao, nome alinhado a esquerda
- * em 12 colunas e tempo com 6 casas decimais.
- */
 static int write_times(const char *filename)
 {
     FILE *fp = fopen(filename, "w");
@@ -612,8 +424,8 @@ static int write_times(const char *filename)
         return EXIT_FILE;
     }
 
-    for (i = 0; i < IMPLS_READY; i++) {
-        if (fprintf(fp, "%-12s%.6f\n", IMPL_NAMES[i], g_times[i]) < 0) {
+    for (i = 0; i < NUM_IMPLS; i++) {
+        if (fprintf(fp, "%s: %.6fs\n", IMPL_LABELS[i], g_times[i]) < 0) {
             fprintf(stderr, "Erro: falha ao escrever em \"%s\"\n", filename);
             fclose(fp);
             return EXIT_FILE;
@@ -629,12 +441,6 @@ static int write_times(const char *filename)
     return 0;
 }
 
-/*
- * Roda uma implementacao paralela sobre img_work, mede apenas o calculo,
- * confere o resultado contra a referencia serial e grava o .pgm.
- *
- * Retorna 0 em sucesso; != 0 em erro (mensagem em stderr).
- */
 static int run_and_check(const Config *cfg, int impl,
                          unsigned char *img_work,
                          const unsigned char *img_ref, size_t npixels)
@@ -671,7 +477,6 @@ static int run_and_check(const Config *cfg, int impl,
     }
     g_times[impl] = t1 - t0;
 
-    /* Evidencia automatica de corretude: silencio total se tudo bater. */
     if (memcmp(img_work, img_ref, npixels) != 0) {
         fprintf(stderr, "AVISO: a implementacao \"%s\" divergiu da serial\n",
                 IMPL_NAMES[impl]);
@@ -713,7 +518,6 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
-    /* Serial: apenas o calculo entra na medicao; a escrita fica de fora. */
     t0 = now_seconds();
     run_serial(&cfg, img_ref);
     t1 = now_seconds();
