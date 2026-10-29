@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -g -pthread
 
 TARGET = sync_car
-SRCS = sync_car.c sync_car_runner.c
+SRCS = sync_car.c sync_car-runner.c
 OBJS = $(SRCS:.c=.o)
 
 .PHONY: all run clean

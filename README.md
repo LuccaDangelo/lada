@@ -16,7 +16,7 @@ threads dos passageiros é feita apenas com `pthread_mutex_*` e `pthread_cond_*`
 |----------------------|----------------------------------------------------------------------------------|
 | `sync_car.h`         | Definição da `struct station` e protótipos das funções da estação.               |
 | `sync_car.c`         | Implementação de `station_init`, `station_load_car`, `station_wait_for_car` e `station_on_board`. |
-| `sync_car_runner.c`  | Teste oficial do professor (contém o `main()`). Não deve ser alterado.           |
+| `sync_car-runner.c`  | Teste oficial do professor (contém o `main()`). Não deve ser alterado.           |
 | `Makefile`           | Compila tudo no executável `sync_car` (alvos `all`, `run`, `clean`).             |
 
 ## Como compilar
