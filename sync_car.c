@@ -12,31 +12,45 @@ void station_init(struct station *station)
 
 void station_load_car(struct station *station, int count)
 {
-	/* TODO: chamada quando um vagão chega com `count` assentos livres.
-	 * Plano:
-	 *   - travar o lock;
-	 *   - free_seats = count;
-	 *   - broadcast em car_arrived (acorda os passageiros na plataforma);
-	 *   - while ((free_seats > 0 && waiting_passengers > 0) ||
-	 *            boarding_passengers > 0)
-	 *         esperar em all_boarded;
-	 *   - free_seats = 0 (fecha o vagão);
-	 *   - destravar o lock. */
-	(void)station;
-	(void)count;
+	pthread_mutex_lock(&station->lock);
+
+	station->free_seats = count;
+	/* acorda todos os passageiros da plataforma: vários podem ser liberados
+	 * de uma vez (até `count`), antes de qualquer on_board */
+	pthread_cond_broadcast(&station->car_arrived);
+
+	/* while, e não if: pthread_cond_wait pode ter despertar espúrio, e quando
+	 * acordamos a condição pode já não valer (ex.: chegou outro passageiro
+	 * enquanto ainda há assentos). Só seguimos quando ela for de fato falsa:
+	 * vagão cheio ou plataforma vazia, e nenhum liberado ainda embarcando. */
+	while ((station->free_seats > 0 && station->waiting_passengers > 0) ||
+	       station->boarding_passengers > 0)
+		pthread_cond_wait(&station->all_boarded, &station->lock);
+
+	/* fecha o vagão: se sobraram assentos (plataforma vazia), um passageiro
+	 * que chegasse depois da partida veria free_seats > 0 e "embarcaria" num
+	 * vagão que já foi embora. Zerar garante que ele espere o próximo. */
+	station->free_seats = 0;
+
+	pthread_mutex_unlock(&station->lock);
 }
 
 void station_wait_for_car(struct station *station)
 {
-	/* TODO: chamada por um passageiro ao chegar na estação.
-	 * Plano:
-	 *   - travar o lock;
-	 *   - waiting_passengers++;
-	 *   - while (free_seats == 0)
-	 *         esperar em car_arrived;
-	 *   - waiting_passengers--; free_seats--; boarding_passengers++;
-	 *   - destravar o lock. */
-	(void)station;
+	pthread_mutex_lock(&station->lock);
+
+	station->waiting_passengers++;
+	/* while, e não if: despertar espúrio, e o broadcast acorda todos, mas
+	 * só há free_seats lugares; quem acordar tarde reencontra 0 e volta
+	 * a esperar o próximo vagão */
+	while (station->free_seats == 0)
+		pthread_cond_wait(&station->car_arrived, &station->lock);
+
+	station->waiting_passengers--;
+	station->free_seats--;
+	station->boarding_passengers++;
+
+	pthread_mutex_unlock(&station->lock);
 }
 
 void station_on_board(struct station *station)
