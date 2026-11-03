@@ -1,2 +1,3 @@
 sync_car
 *.o
+sync_car_tsan
