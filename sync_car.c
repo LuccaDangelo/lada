@@ -55,13 +55,22 @@ void station_wait_for_car(struct station *station)
 
 void station_on_board(struct station *station)
 {
-	/* TODO: chamada pelo passageiro depois de sentar no vagão.
-	 * Plano:
-	 *   - travar o lock;
-	 *   - boarding_passengers--;
-	 *   - se boarding_passengers == 0 &&
-	 *        (free_seats == 0 || waiting_passengers == 0)
-	 *         signal em all_boarded;
-	 *   - destravar o lock. */
-	(void)station;
+	pthread_mutex_lock(&station->lock);
+
+	station->boarding_passengers--;
+
+	/* Mesma condição que libera o while do station_load_car (é a negação de
+	 * (free_seats > 0 && waiting_passengers > 0) || boarding_passengers > 0):
+	 * ninguém mais embarcando E (vagão cheio OU plataforma vazia). Sinalizar
+	 * só nesse caso evita acordar o vagão à toa; e o vagão, de todo modo,
+	 * reavalia a condição no while ao acordar.
+	 *
+	 * signal (e não broadcast) basta: a única thread que espera em
+	 * all_boarded é a do vagão, e o enunciado garante um único vagão na
+	 * estação por vez — há no máximo uma thread para acordar. */
+	if (station->boarding_passengers == 0 &&
+	    (station->free_seats == 0 || station->waiting_passengers == 0))
+		pthread_cond_signal(&station->all_boarded);
+
+	pthread_mutex_unlock(&station->lock);
 }
