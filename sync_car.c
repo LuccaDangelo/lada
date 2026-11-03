@@ -14,7 +14,9 @@ void station_load_car(struct station *station, int count)
 {
 	pthread_mutex_lock(&station->lock);
 
-	station->free_seats = count;
+	/* count <= 0 = vagão sem assentos: free_seats nunca fica negativo, senão
+	 * o while (free_seats == 0) de wait_for_car deixaria passar passageiros */
+	station->free_seats = count > 0 ? count : 0;
 	/* acorda todos os passageiros da plataforma: vários podem ser liberados
 	 * de uma vez (até `count`), antes de qualquer on_board */
 	pthread_cond_broadcast(&station->car_arrived);
