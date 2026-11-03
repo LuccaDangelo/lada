@@ -5,7 +5,7 @@ TARGET = sync_car
 SRCS = sync_car.c sync_car-runner.c
 OBJS = $(SRCS:.c=.o)
 
-.PHONY: all run clean stress tsan
+.PHONY: all run clean stress tsan test-extra
 
 all: $(TARGET)
 
@@ -59,5 +59,12 @@ tsan: $(TSAN_TARGET)
 	echo "tsan: $$ok/10 ok, $$fail falhas"; \
 	[ $$fail -eq 0 ]
 
+# ---- test-extra: testes próprios (count <= 0 em load_car) ----
+test_extra: test_extra.o sync_car.o
+	$(CC) $(CFLAGS) -o $@ test_extra.o sync_car.o
+
+test-extra: test_extra
+	./test_extra
+
 clean:
-	rm -f $(TARGET) $(TSAN_TARGET) *.o
+	rm -f $(TARGET) $(TSAN_TARGET) test_extra *.o
