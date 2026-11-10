@@ -1,0 +1,24 @@
+Script started on Tue Nov 10 14:58:32 2026
+[1m[7m%[27m[1m[0m                                                                                                                                                          [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mmake clean && make[27m[18D[27mm[27ma[27mk[27me[27m [27mc[27ml[27me[27ma[27mn[27m [27m&[27m&[27m [27mm[27ma[27mk[27me[?2004l
+rm -rf banker *.o result.txt banker.dSYM
+cc -std=c11 -Wall -Wextra -pedantic -g -o banker banker.c
+[1m[7m%[27m[1m[0m                                                                                                                                                          [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7m./banker;             echo "exit=$?"[27m[36D[27m.[27m/[27mb[27ma[27mn[27mk[27me[27mr[27m;[27m [27m [27m [27m [27m [27m [27m [27m [27m [27m [27m [27m [27m [27me[27mc[27mh[27mo[27m [27m"[27me[27mx[27mi[27mt[27m=[27m$[27m?[27m"[?2004l
+Usage: ./banker <r1> <r2> ...
+exit=1
+[1m[7m%[27m[1m[0m                                                                                                                                                          [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7m./banker 10 abc 7;    echo "exit=$?"[27m
+[7m./banker 10 -1 7;     echo "exit=$?"[27m[K
+[7m./banker 99999999999; echo "exit=$?"[27m[K
+[7m./banker 10 5 7;      echo "exit=$?"[27m[K[3A[3C[27m.[27m/[27mb[27ma[27mn[27mk[27me[27mr[27m [27m1[27m0[27m [27ma[27mb[27mc[27m [27m7[27m;[27m [27m [27m [27m [27me[27mc[27mh[27mo[27m [27m"[27me[27mx[27mi[27mt[27m=[27m$[27m?[27m"[1B[27m.[27m/[27mb[27ma[27mn[27mk[27me[27mr[27m [27m1[27m0[27m [27m-[27m1[27m [27m7[27m;[27m [27m [27m [27m [27m [27me[27mc[27mh[27mo[27m [27m"[27me[27mx[27mi[27mt[27m=[27m$[27m?[27m"[1B[27m.[27m/[27mb[27ma[27mn[27mk[27me[27mr[27m [27m9[27m9[27m9[27m9[27m9[27m9[27m9[27m9[27m9[27m9[27m9[27m;[27m [27me[27mc[27mh[27mo[27m [27m"[27me[27mx[27mi[27mt[27m=[27m$[27m?[27m"[1B[27m.[27m/[27mb[27ma[27mn[27mk[27me[27mr[27m [27m1[27m0[27m [27m5[27m [27m7[27m;[27m [27m [27m [27m [27m [27m [27me[27mc[27mh[27mo[27m [27m"[27me[27mx[27mi[27mt[27m=[27m$[27m?[27m"[?2004l
+Erro: argumento 2 ("abc") invalido: esperado inteiro >= 0 (ate 2147483647)
+exit=1
+Erro: argumento 2 ("-1") invalido: esperado inteiro >= 0 (ate 2147483647)
+exit=1
+Erro: argumento 1 ("99999999999") invalido: esperado inteiro >= 0 (ate 2147483647)
+exit=1
+exit=0
+[1m[7m%[27m[1m[0m                                                                                                                                                          [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004hmmake clean[?2004l
+rm -rf banker *.o result.txt banker.dSYM
+[1m[7m%[27m[1m[0m                                                                                                                                                          [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004heexit[?2004l
+
+Script done on Tue Nov 10 15:01:51 2026
+Script started on Tue Nov 10 15:02:35 2026

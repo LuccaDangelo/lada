@@ -1,0 +1,5 @@
+banker
+*.o
+result.txt
+*.dSYM/
+lada.tar
