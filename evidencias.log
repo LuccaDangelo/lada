@@ -22,3 +22,36 @@ rm -rf banker *.o result.txt banker.dSYM
 
 Script done on Tue Nov 10 15:01:51 2026
 Script started on Tue Nov 10 15:02:35 2026
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mdate; whoami; pwd[27m[17D[27md[27ma[27mt[27me[27m;[27m [27mw[27mh[27mo[27ma[27mm[27mi[27m;[27m [27mp[27mw[27md[?2004l
+Tue Nov 10 15:02:39 -03 2026
+luccadangelo
+/Users/luccadangelo/lada/lada
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mgit add banker.c Makefile .gitignore README.md evidencias.log[27m[61D[27mg[27mi[27mt[27m [27ma[27md[27md[27m [27mb[27ma[27mn[27mk[27me[27mr[27m.[27mc[27m [27mM[27ma[27mk[27me[27mf[27mi[27ml[27me[27m [27m.[27mg[27mi[27mt[27mi[27mg[27mn[27mo[27mr[27me[27m [27mR[27mE[27mA[27mD[27mM[27mE[27m.[27mm[27md[27m [27me[27mv[27mi[27md[27me[27mn[27mc[27mi[27ma[27ms[27m.[27ml[27mo[27mg[?2004l
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mgit commit -m "estrutura inicial: Makefile, README e validação dos argumentos"[27m[78D[27mg[27mi[27mt[27m [27mc[27mo[27mm[27mm[27mi[27mt[27m [27m-[27mm[27m [27m"[27me[27ms[27mt[27mr[27mu[27mt[27mu[27mr[27ma[27m [27mi[27mn[27mi[27mc[27mi[27ma[27ml[27m:[27m [27mM[27ma[27mk[27me[27mf[27mi[27ml[27me[27m,[27m [27mR[27mE[27mA[27mD[27mM[27mE[27m [27me[27m [27mv[27ma[27ml[27mi[27md[27ma[27mç[27mã[27mo[27m [27md[27mo[27ms[27m [27ma[27mr[27mg[27mu[27mm[27me[27mn[27mt[27mo[27ms[27m"[?2004l
+[main 701f5c9] estrutura inicial: Makefile, README e validação dos argumentos
+ 5 files changed, 168 insertions(+), 1 deletion(-)
+ create mode 100644 .gitignore
+ create mode 100644 Makefile
+ create mode 100644 banker.c
+ create mode 100644 evidencias.log
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004hggit push[?2004l
+Enumerating objects: 9, done.
+Counting objects:  11% (1/9)Counting objects:  22% (2/9)Counting objects:  33% (3/9)Counting objects:  44% (4/9)Counting objects:  55% (5/9)Counting objects:  66% (6/9)Counting objects:  77% (7/9)Counting objects:  88% (8/9)Counting objects: 100% (9/9)Counting objects: 100% (9/9), done.
+Delta compression using up to 10 threads
+Compressing objects:  16% (1/6)Compressing objects:  33% (2/6)Compressing objects:  50% (3/6)Compressing objects:  66% (4/6)Compressing objects:  83% (5/6)Compressing objects: 100% (6/6)Compressing objects: 100% (6/6), done.
+Writing objects:  14% (1/7)Writing objects:  28% (2/7)Writing objects:  42% (3/7)Writing objects:  57% (4/7)Writing objects:  71% (5/7)Writing objects:  85% (6/7)Writing objects: 100% (7/7)Writing objects: 100% (7/7), 2.59 KiB | 2.59 MiB/s, done.
+Total 7 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+To https://github.com/LuccaDangelo/lada.git
+   b372e8c..701f5c9  main -> main
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004heexit[?2004l
+
+Script done on Tue Nov 10 15:03:01 2026
+Script started on Wed Nov 11 14:24:53 2026
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mdate; whoami; pwd[27m[17D[27md[27ma[27mt[27me[27m;[27m [27mw[27mh[27mo[27ma[27mm[27mi[27m;[27m [27mp[27mw[27md[?2004l
+Wed Nov 11 14:24:59 -03 2026
+luccadangelo
+/Users/luccadangelo/lada/lada
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mcd /tmp && rm -rf print_erro && mkdir print_erro && cd print_erro && cp ~/lada/exemplo-professor/c[7mu[7mstomer.txt . && ls && ~/lada/lada/banker 10 5 7; echo "exit=$?"; cd ~/lada/lada[27m[K[A[41D[27mc[27md[27m [27m/[27mt[27mm[27mp[27m [27m&[27m&[27m [27mr[27mm[27m [27m-[27mr[27mf[27m [27mp[27mr[27mi[27mn[27mt[27m_[27me[27mr[27mr[27mo[27m [27m&[27m&[27m [27mm[27mk[27md[27mi[27mr[27m [27mp[27mr[27mi[27mn[27mt[27m_[27me[27mr[27mr[27mo[27m [27m&[27m&[27m [27mc[27md[27m [27mp[27mr[27mi[27mn[27mt[27m_[27me[27mr[27mr[27mo[27m [27m&[27m&[27m [27mc[27mp[27m [27m~[27m/[27ml[27ma[27md[27ma[27m/[27me[27mx[27me[27mm[27mp[27ml[27mo[27m-[27mp[27mr[27mo[27mf[27me[27ms[27ms[27mo[27mr[27m/[27mcu[27ms[27mt[27mo[27mm[27me[27mr[27m.[27mt[27mx[27mt[27m [27m.[27m [27m&[27m&[27m [27ml[27ms[27m [27m&[27m&[27m [27m~[27m/[27ml[27ma[27md[27ma[27m/[27ml[27ma[27md[27ma[27m/[27mb[27ma[27mn[27mk[27me[27mr[27m [27m1[27m0[27m [27m5[27m [27m7[27m;[27m [27me[27mc[27mh[27mo[27m [27m"[27me[27mx[27mi[27mt[27m=[27m$[27m?[27m"[27m;[27m [27mc[27md[27m [27m~[27m/[27ml[27ma[27md[27ma[27m/[27ml[27ma[27md[27ma[?2004l
+customer.txt
+exit=0
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h
