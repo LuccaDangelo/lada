@@ -1,0 +1,64 @@
+Script started on Wed Nov 18 23:23:46 2026
+[1m[7m%[27m[1m[0m                                                                                                                                                          [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mdate; whoami; pwd[27m
+[7mcp ~/Downloads/addresses.txt ~/Downloads/correct_prof.txt .[27m[K
+[7mls[27m[K[A[A[37C[27md[27ma[27mt[27me[27m;[27m [27mw[27mh[27mo[27ma[27mm[27mi[27m;[27m [27mp[27mw[27md[1B[27mc[27mp[27m [27m~[27m/[27mD[27mo[27mw[27mn[27ml[27mo[27ma[27md[27ms[27m/[27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27m~[27m/[27mD[27mo[27mw[27mn[27ml[27mo[27ma[27md[27ms[27m/[27mc[27mo[27mr[27mr[27me[27mc[27mt[27m_[27mp[27mr[27mo[27mf[27m.[27mt[27mx[27mt[27m [27m.[1B[27ml[27ms[?2004l
+Wed Nov 18 23:25:38 -03 2026
+luccadangelo
+/Users/luccadangelo/lada/lada
+cp: /Users/luccadangelo/Downloads/addresses.txt: No such file or directory
+cp: /Users/luccadangelo/Downloads/correct_prof.txt: No such file or directory
+BACKING_STORE.bin	evidencias.log
+[1m[7m%[27m[1m[0m                                                                                                                                                          [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mmake clean && make[27m
+[7m./vm[27m[K
+[7m./vm addresses.txt lru[27m[K
+[7m./vm addresses.txt lru fifo extra[27m[K
+[7m./vm addresses.txt LRU fifo[27m[K
+[7m./vm addresses.txt lru abc[27m[K
+[7m./vm nao_existe.txt lru fifo[27m[K
+[7mprintf "123\nabc\n" > /tmp/bad1.txt && ./vm /tmp/bad1.txt lru fifo[27m[K
+[7mprintf "70000\n" > /tmp/bad2.txt && ./vm /tmp/bad2.txt lru fifo[27m[K
+[7mprintf "" > /tmp/vazio.txt && ./vm /tmp/vazio.txt lru fifo[27m[K
+[7m./vm addresses.txt lru fifo[27m[K
+[7mgit status[27m[K[11A[29C[27mm[27ma[27mk[27me[27m [27mc[27ml[27me[27ma[27mn[27m [27m&[27m&[27m [27mm[27ma[27mk[27me[1B[27m.[27m/[27mv[27mm[1B[27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[1B[27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27mf[27mi[27mf[27mo[27m [27me[27mx[27mt[27mr[27ma[1B[27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27mL[27mR[27mU[27m [27mf[27mi[27mf[27mo[1B[27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27ma[27mb[27mc[1B[27m.[27m/[27mv[27mm[27m [27mn[27ma[27mo[27m_[27me[27mx[27mi[27ms[27mt[27me[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27mf[27mi[27mf[27mo[1B[27mp[27mr[27mi[27mn[27mt[27mf[27m [27m"[27m1[27m2[27m3[27m\[27mn[27ma[27mb[27mc[27m\[27mn[27m"[27m [27m>[27m [27m/[27mt[27mm[27mp[27m/[27mb[27ma[27md[27m1[27m.[27mt[27mx[27mt[27m [27m&[27m&[27m [27m.[27m/[27mv[27mm[27m [27m/[27mt[27mm[27mp[27m/[27mb[27ma[27md[27m1[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27mf[27mi[27mf[27mo[1B[27mp[27mr[27mi[27mn[27mt[27mf[27m [27m"[27m7[27m0[27m0[27m0[27m0[27m\[27mn[27m"[27m [27m>[27m [27m/[27mt[27mm[27mp[27m/[27mb[27ma[27md[27m2[27m.[27mt[27mx[27mt[27m [27m&[27m&[27m [27m.[27m/[27mv[27mm[27m [27m/[27mt[27mm[27mp[27m/[27mb[27ma[27md[27m2[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27mf[27mi[27mf[27mo[1B[27mp[27mr[27mi[27mn[27mt[27mf[27m [27m"[27m"[27m [27m>[27m [27m/[27mt[27mm[27mp[27m/[27mv[27ma[27mz[27mi[27mo[27m.[27mt[27mx[27mt[27m [27m&[27m&[27m [27m.[27m/[27mv[27mm[27m [27m/[27mt[27mm[27mp[27m/[27mv[27ma[27mz[27mi[27mo[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27mf[27mi[27mf[27mo[1B[27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27mf[27mi[27mf[27mo[1B[27mg[27mi[27mt[27m [27ms[27mt[27ma[27mt[27mu[27ms[?2004l
+rm -f vm *.o correct.txt
+gcc -Wall -Wextra -g -pthread -c vm.c -o vm.o
+gcc -Wall -Wextra -g -pthread -o vm vm.o
+Erro: número de argumentos inválido (esperado 3, recebido 0)
+Uso: ./vm <arquivo_enderecos> <fifo|lru> <fifo|lru>
+  2º argumento: algoritmo de substituição de página (fifo ou lru)
+  3º argumento: algoritmo de substituição da TLB (fifo ou lru)
+Erro: número de argumentos inválido (esperado 3, recebido 2)
+Uso: ./vm <arquivo_enderecos> <fifo|lru> <fifo|lru>
+  2º argumento: algoritmo de substituição de página (fifo ou lru)
+  3º argumento: algoritmo de substituição da TLB (fifo ou lru)
+Erro: número de argumentos inválido (esperado 3, recebido 4)
+Uso: ./vm <arquivo_enderecos> <fifo|lru> <fifo|lru>
+  2º argumento: algoritmo de substituição de página (fifo ou lru)
+  3º argumento: algoritmo de substituição da TLB (fifo ou lru)
+Erro: algoritmo de substituição de página inválido: 'LRU' (use "fifo" ou "lru", em minúsculas)
+Uso: ./vm <arquivo_enderecos> <fifo|lru> <fifo|lru>
+  2º argumento: algoritmo de substituição de página (fifo ou lru)
+  3º argumento: algoritmo de substituição da TLB (fifo ou lru)
+Erro: algoritmo de substituição da TLB inválido: 'abc' (use "fifo" ou "lru", em minúsculas)
+Uso: ./vm <arquivo_enderecos> <fifo|lru> <fifo|lru>
+  2º argumento: algoritmo de substituição de página (fifo ou lru)
+  3º argumento: algoritmo de substituição da TLB (fifo ou lru)
+Erro: não foi possível abrir o arquivo de endereços 'nao_existe.txt': No such file or directory
+Erro de formato em '/tmp/bad1.txt', linha 2: "abc" não é um número inteiro não negativo
+Erro de formato em '/tmp/bad2.txt', linha 1: endereço 70000 fora do intervalo 0..65535
+Erro de formato em '/tmp/vazio.txt': o arquivo não contém nenhum endereço
+1000 endereços lidos de 'addresses.txt'
+On branch main
+
+No commits yet
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	[31m.gitignore[m
+	[31mMakefile[m
+	[31mREADME.md[m
+	[31mevidencias.log[m
+	[31mvm.c[m
+
+nothing added to commit but untracked files present (use "git add" to track)
+[1m[7m%[27m[1m[0m                                                                                                                                                          [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h

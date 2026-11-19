@@ -1,0 +1,6 @@
+vm
+*.o
+correct.txt
+correct_prof.txt
+addresses.txt
+BACKING_STORE.bin
