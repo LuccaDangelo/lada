@@ -1,6 +1,10 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g -pthread
 
+# Número de frames da memória física (padrão 128). Ex.: make FRAMES=256
+FRAMES ?= 128
+CFLAGS += -DNUM_FRAMES=$(FRAMES)
+
 TARGET = vm
 OBJS = vm.o
 

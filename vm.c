@@ -7,7 +7,12 @@
  *   2º argumento: algoritmo de substituição de página
  *   3º argumento: algoritmo de substituição da TLB
  *
- * Etapa atual: apenas estrutura e tratamento de erros (sem tradução).
+ * Etapa atual: tradução de endereços com substituição de página (FIFO ou LRU),
+ * ainda sem TLB (a coluna "TLB" da saída é -1 por enquanto).
+ *
+ * O número de frames é definido na compilação (padrão 128):
+ *   make              -> 128 frames
+ *   make FRAMES=256   -> 256 frames
  */
 
 #include <ctype.h>
@@ -21,11 +26,39 @@
 
 #define PAGE_SIZE          256
 #define NUM_PAGES          256
-#define NUM_FRAMES         256
+#ifndef NUM_FRAMES
+#define NUM_FRAMES         128
+#endif
 #define TLB_SIZE           16
 #define MAX_LOGICAL_ADDR   65535
 
+#if NUM_FRAMES < 1
+#error "NUM_FRAMES deve ser maior que zero"
+#endif
+
 typedef enum { ALG_FIFO, ALG_LRU } algorithm_t;
+
+/* Tabela de páginas: frame onde a página está carregada, ou -1. */
+static int page_table[NUM_PAGES];
+/* Página carregada em cada frame (para invalidar a entrada na substituição), ou -1. */
+static int frame_to_page[NUM_FRAMES];
+static signed char physical_memory[NUM_FRAMES][PAGE_SIZE];
+
+/* Próximo frame livre (frames são preenchidos de 0 a NUM_FRAMES-1, em ordem). */
+static int next_free_frame = 0;
+
+/*
+ * FIFO: fila circular com a ordem de carregamento dos frames. Como os frames são
+ * preenchidos em ordem e o frame substituído recebe a página nova (indo para o fim
+ * da fila), a fila é sempre 0,1,...,N-1 rotacionada; basta guardar a cabeça.
+ */
+static int fifo_queue[NUM_FRAMES];
+static int fifo_head = 0;
+static int fifo_count = 0;
+
+/* LRU: contador global de acessos; last_used[f] = instante do último acesso ao frame f. */
+static unsigned long access_clock = 0;
+static unsigned long last_used[NUM_FRAMES];
 
 static void print_usage(const char *prog) {
     fprintf(stderr, "Uso: %s <arquivo_enderecos> <fifo|lru> <fifo|lru>\n", prog);
@@ -137,6 +170,70 @@ done:
     return 0;
 }
 
+/* Registra um acesso ao frame (para LRU). Chamado em TODO acesso, não só no page fault. */
+static void touch_frame(int frame) {
+    last_used[frame] = ++access_clock;
+}
+
+static void fifo_push(int frame) {
+    fifo_queue[(fifo_head + fifo_count) % NUM_FRAMES] = frame;
+    fifo_count++;
+}
+
+static int fifo_pop(void) {
+    int frame = fifo_queue[fifo_head];
+    fifo_head = (fifo_head + 1) % NUM_FRAMES;
+    fifo_count--;
+    return frame;
+}
+
+static int lru_victim(void) {
+    int victim = 0;
+    for (int f = 1; f < NUM_FRAMES; f++)
+        if (last_used[f] < last_used[victim])
+            victim = f;
+    return victim;
+}
+
+/*
+ * Trata um page fault: escolhe o frame (livre ou vítima), invalida a página antiga
+ * e carrega a página do backing store. Retorna o frame, ou -1 em erro (já reportado).
+ */
+static int handle_page_fault(int page, algorithm_t page_alg, FILE *backing) {
+    int frame;
+
+    if (next_free_frame < NUM_FRAMES) {
+        frame = next_free_frame++;
+    } else {
+        frame = (page_alg == ALG_FIFO) ? fifo_pop() : lru_victim();
+        int old_page = frame_to_page[frame];
+        if (old_page >= 0)
+            page_table[old_page] = -1;
+    }
+
+    if (fseek(backing, (long)page * PAGE_SIZE, SEEK_SET) != 0) {
+        fprintf(stderr, "Erro: falha ao posicionar em '%s' para a página %d: %s\n",
+                BACKING_STORE_FILE, page, strerror(errno));
+        return -1;
+    }
+    size_t got = fread(physical_memory[frame], 1, PAGE_SIZE, backing);
+    if (got != PAGE_SIZE) {
+        if (ferror(backing))
+            fprintf(stderr, "Erro: falha ao ler a página %d de '%s': %s\n",
+                    page, BACKING_STORE_FILE, strerror(errno ? errno : EIO));
+        else
+            fprintf(stderr, "Erro: '%s' truncado: página %d tem só %zu de %d bytes\n",
+                    BACKING_STORE_FILE, page, got, PAGE_SIZE);
+        return -1;
+    }
+
+    page_table[page] = frame;
+    frame_to_page[frame] = page;
+    if (page_alg == ALG_FIFO)
+        fifo_push(frame);
+    return frame;
+}
+
 int main(int argc, char *argv[]) {
     algorithm_t page_alg, tlb_alg;
 
@@ -176,13 +273,77 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    (void)page_alg;
-    (void)tlb_alg;
+    (void)tlb_alg; /* validado, mas a TLB ainda não foi implementada */
 
-    /* TODO: tradução de endereços (próxima etapa). */
-    printf("%zu endereços lidos de '%s'\n", count, argv[1]);
+    FILE *out = fopen(OUTPUT_FILE, "w");
+    if (out == NULL) {
+        fprintf(stderr, "Erro: não foi possível criar '%s': %s\n",
+                OUTPUT_FILE, strerror(errno));
+        fclose(backing);
+        free(addrs);
+        return EXIT_FAILURE;
+    }
+
+    for (int p = 0; p < NUM_PAGES; p++)
+        page_table[p] = -1;
+    for (int f = 0; f < NUM_FRAMES; f++)
+        frame_to_page[f] = -1;
+
+    int page_faults = 0;
+    int tlb_hits = 0;
+    int status = EXIT_SUCCESS;
+
+    for (size_t i = 0; i < count; i++) {
+        unsigned int addr = addrs[i];
+        int page = (int)((addr >> 8) & 0xFF);
+        int offset = (int)(addr & 0xFF);
+
+        int frame = page_table[page];
+        if (frame < 0) {
+            page_faults++;
+            frame = handle_page_fault(page, page_alg, backing);
+            if (frame < 0) {
+                status = EXIT_FAILURE;
+                break;
+            }
+        }
+        touch_frame(frame);
+
+        int physical = frame * PAGE_SIZE + offset;
+        int value = physical_memory[frame][offset];
+
+        if (fprintf(out, "Virtual address: %u TLB: %d Physical address: %d Value: %d\n",
+                    addr, -1, physical, value) < 0) {
+            fprintf(stderr, "Erro ao escrever em '%s': %s\n", OUTPUT_FILE, strerror(errno));
+            status = EXIT_FAILURE;
+            break;
+        }
+    }
+
+    if (status == EXIT_SUCCESS) {
+        if (fprintf(out,
+                    "Number of Translated Addresses = %zu\n"
+                    "Page Faults = %d\n"
+                    "Page Fault Rate = %.3f\n"
+                    "TLB Hits = %d\n"
+                    "TLB Hit Rate = %.3f\n",
+                    count, page_faults, (double)page_faults / (double)count,
+                    tlb_hits, (double)tlb_hits / (double)count) < 0) {
+            fprintf(stderr, "Erro ao escrever em '%s': %s\n", OUTPUT_FILE, strerror(errno));
+            status = EXIT_FAILURE;
+        }
+    }
+
+    if (fclose(out) != 0 && status == EXIT_SUCCESS) {
+        fprintf(stderr, "Erro ao fechar '%s': %s\n", OUTPUT_FILE, strerror(errno));
+        status = EXIT_FAILURE;
+    }
+
+    if (status == EXIT_SUCCESS)
+        printf("%zu endereços traduzidos (%d frames, página: %s): %d page faults -> %s\n",
+               count, NUM_FRAMES, argv[2], page_faults, OUTPUT_FILE);
 
     fclose(backing);
     free(addrs);
-    return EXIT_SUCCESS;
+    return status;
 }

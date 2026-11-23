@@ -14,6 +14,20 @@ make          # gera o executável ./vm
 make clean    # remove o executável, os .o e o correct.txt
 ```
 
+### Número de frames
+
+A memória física tem **128 frames por padrão** (o que o enunciado pede), então `make` sozinho
+já gera a versão de entrega. O número de frames pode ser trocado na compilação com a variável
+`FRAMES`, por exemplo para testar com memória física igual ao espaço virtual (sem substituição):
+
+```sh
+make clean && make FRAMES=256   # 256 frames (fluxo de teste)
+make clean && make              # volta para o padrão de 128 frames
+```
+
+Sempre rode `make clean` ao trocar `FRAMES`: o `make` não detecta a mudança da variável e
+reaproveitaria o `vm.o` antigo.
+
 ## Executar
 
 ```sh
