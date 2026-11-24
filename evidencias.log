@@ -225,4 +225,22 @@ Total 7 (delta 2), reused 0 (delta 0), pack-reused 0 (from 0)
 remote: Resolving deltas:   0% (0/2)[Kremote: Resolving deltas:  50% (1/2)[Kremote: Resolving deltas: 100% (2/2)[Kremote: Resolving deltas: 100% (2/2), completed with 2 local objects.[K
 To https://github.com/LuccaDangelo/lada.git
    48cda87..c1a7897  main -> main
-[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mcp ~/Downloads/lada.pdf .[27m
+[7mgit add lada.pdf evidencias.log[27m[K
+[7mgit commit -m "relatorio lada.pdf"[27m[K
+[7mgit push[27m[K[3A[31C[27mc[27mp[27m [27m~[27m/[27mD[27mo[27mw[27mn[27ml[27mo[27ma[27md[27ms[27m/[27ml[27ma[27md[27ma[27m.[27mp[27md[27mf[27m [27m.[1B[27mg[27mi[27mt[27m [27ma[27md[27md[27m [27ml[27ma[27md[27ma[27m.[27mp[27md[27mf[27m [27me[27mv[27mi[27md[27me[27mn[27mc[27mi[27ma[27ms[27m.[27ml[27mo[27mg[1B[27mg[27mi[27mt[27m [27mc[27mo[27mm[27mm[27mi[27mt[27m [27m-[27mm[27m [27m"[27mr[27me[27ml[27ma[27mt[27mo[27mr[27mi[27mo[27m [27ml[27ma[27md[27ma[27m.[27mp[27md[27mf[27m"[1B[27mg[27mi[27mt[27m [27mp[27mu[27ms[27mh[?2004l
+[main d3b60bc] relatorio lada.pdf
+ 2 files changed, 14 insertions(+)
+ create mode 100644 lada.pdf
+Enumerating objects: 6, done.
+Counting objects:  16% (1/6)Counting objects:  33% (2/6)Counting objects:  50% (3/6)Counting objects:  66% (4/6)Counting objects:  83% (5/6)Counting objects: 100% (6/6)Counting objects: 100% (6/6), done.
+Delta compression using up to 10 threads
+Compressing objects:  25% (1/4)Compressing objects:  50% (2/4)Compressing objects:  75% (3/4)Compressing objects: 100% (4/4)Compressing objects: 100% (4/4), done.
+Writing objects:  25% (1/4)Writing objects:  50% (2/4)Writing objects:  75% (3/4)Writing objects: 100% (4/4)Writing objects: 100% (4/4), 956.63 KiB | 39.86 MiB/s, done.
+Total 4 (delta 2), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas:   0% (0/2)[Kremote: Resolving deltas:  50% (1/2)[Kremote: Resolving deltas: 100% (2/2)[Kremote: Resolving deltas: 100% (2/2), completed with 2 local objects.[K
+To https://github.com/LuccaDangelo/lada.git
+   c1a7897..d3b60bc  main -> main
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004heexit[?2004l
+
+Script done on Tue Nov 24 18:47:06 2026
