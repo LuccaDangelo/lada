@@ -28,6 +28,19 @@ make clean && make              # volta para o padrão de 128 frames
 Sempre rode `make clean` ao trocar `FRAMES`: o `make` não detecta a mudança da variável e
 reaproveitaria o `vm.o` antigo.
 
+### TLB
+
+A TLB (16 entradas, substituição `fifo` ou `lru` conforme o 3º argumento) vem **ligada por
+padrão**. Para demonstrar o fluxo sem TLB (só tabela de páginas), compile com `TLB=0`:
+
+```sh
+make clean && make TLB=0   # sem TLB: coluna "TLB" = -1 e TLB Hits = 0
+make clean && make         # volta para o padrão, com TLB
+```
+
+Com `TLB=0` o 3º argumento continua obrigatório e validado, mas não tem efeito. Assim como em
+`FRAMES`, rode `make clean` ao trocar `TLB`.
+
 ## Executar
 
 ```sh

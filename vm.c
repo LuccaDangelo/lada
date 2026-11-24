@@ -7,12 +7,16 @@
  *   2º argumento: algoritmo de substituição de página
  *   3º argumento: algoritmo de substituição da TLB
  *
- * Etapa atual: tradução de endereços com substituição de página (FIFO ou LRU),
- * ainda sem TLB (a coluna "TLB" da saída é -1 por enquanto).
+ * Etapa atual: tradução de endereços com substituição de página (FIFO ou LRU) e
+ * TLB de 16 entradas com substituição FIFO ou LRU (ainda sem threads).
  *
  * O número de frames é definido na compilação (padrão 128):
  *   make              -> 128 frames
  *   make FRAMES=256   -> 256 frames
+ *
+ * A TLB pode ser desligada na compilação (fluxo sem TLB: coluna "TLB" = -1, 0 hits):
+ *   make              -> com TLB (padrão)
+ *   make TLB=0        -> sem TLB
  */
 
 #include <ctype.h>
@@ -31,6 +35,9 @@
 #endif
 #define TLB_SIZE           16
 #define MAX_LOGICAL_ADDR   65535
+#ifndef USE_TLB
+#define USE_TLB            1
+#endif
 
 #if NUM_FRAMES < 1
 #error "NUM_FRAMES deve ser maior que zero"
@@ -59,6 +66,21 @@ static int fifo_count = 0;
 /* LRU: contador global de acessos; last_used[f] = instante do último acesso ao frame f. */
 static unsigned long access_clock = 0;
 static unsigned long last_used[NUM_FRAMES];
+
+#if USE_TLB
+/* TLB: cache de traduções página -> frame. */
+typedef struct {
+    int page;
+    int frame;
+    int valid;
+    unsigned long last_used; /* instante do último uso da entrada (TLB LRU) */
+} tlb_entry_t;
+
+static tlb_entry_t tlb[TLB_SIZE];
+static unsigned long tlb_clock = 0;
+/* TLB FIFO: ponteiro circular para a próxima entrada a ser sobrescrita. */
+static int tlb_fifo_next = 0;
+#endif
 
 static void print_usage(const char *prog) {
     fprintf(stderr, "Uso: %s <arquivo_enderecos> <fifo|lru> <fifo|lru>\n", prog);
@@ -195,6 +217,51 @@ static int lru_victim(void) {
     return victim;
 }
 
+#if USE_TLB
+/* Busca sequencial na TLB. Retorna o índice da entrada válida da página, ou -1. */
+static int tlb_lookup(int page) {
+    for (int i = 0; i < TLB_SIZE; i++)
+        if (tlb[i].valid && tlb[i].page == page)
+            return i;
+    return -1;
+}
+
+/* Insere {page, frame} na TLB conforme o algoritmo. Retorna o índice usado. */
+static int tlb_insert(int page, int frame, algorithm_t tlb_alg) {
+    int idx;
+
+    if (tlb_alg == ALG_FIFO) {
+        /* Avança sempre, mesmo que exista entrada inválida. */
+        idx = tlb_fifo_next;
+        tlb_fifo_next = (tlb_fifo_next + 1) % TLB_SIZE;
+    } else {
+        idx = -1;
+        for (int i = 0; i < TLB_SIZE; i++) {
+            if (!tlb[i].valid) { idx = i; break; }
+        }
+        if (idx < 0) {
+            idx = 0;
+            for (int i = 1; i < TLB_SIZE; i++)
+                if (tlb[i].last_used < tlb[idx].last_used)
+                    idx = i;
+        }
+    }
+
+    tlb[idx].page = page;
+    tlb[idx].frame = frame;
+    tlb[idx].valid = 1;
+    tlb[idx].last_used = ++tlb_clock;
+    return idx;
+}
+
+/* Invalida qualquer entrada da TLB que aponte para a página (que saiu da memória). */
+static void tlb_invalidate_page(int page) {
+    for (int i = 0; i < TLB_SIZE; i++)
+        if (tlb[i].valid && tlb[i].page == page)
+            tlb[i].valid = 0;
+}
+#endif
+
 /*
  * Trata um page fault: escolhe o frame (livre ou vítima), invalida a página antiga
  * e carrega a página do backing store. Retorna o frame, ou -1 em erro (já reportado).
@@ -207,8 +274,12 @@ static int handle_page_fault(int page, algorithm_t page_alg, FILE *backing) {
     } else {
         frame = (page_alg == ALG_FIFO) ? fifo_pop() : lru_victim();
         int old_page = frame_to_page[frame];
-        if (old_page >= 0)
+        if (old_page >= 0) {
             page_table[old_page] = -1;
+#if USE_TLB
+            tlb_invalidate_page(old_page);
+#endif
+        }
     }
 
     if (fseek(backing, (long)page * PAGE_SIZE, SEEK_SET) != 0) {
@@ -273,7 +344,9 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    (void)tlb_alg; /* validado, mas a TLB ainda não foi implementada */
+#if !USE_TLB
+    (void)tlb_alg; /* validado, mas a TLB foi desligada na compilação (TLB=0) */
+#endif
 
     FILE *out = fopen(OUTPUT_FILE, "w");
     if (out == NULL) {
@@ -298,22 +371,41 @@ int main(int argc, char *argv[]) {
         int page = (int)((addr >> 8) & 0xFF);
         int offset = (int)(addr & 0xFF);
 
-        int frame = page_table[page];
-        if (frame < 0) {
-            page_faults++;
-            frame = handle_page_fault(page, page_alg, backing);
+        int frame;
+        int tlb_index = -1;
+
+#if USE_TLB
+        tlb_index = tlb_lookup(page);
+        if (tlb_index >= 0) {
+            /* TLB hit */
+            tlb_hits++;
+            frame = tlb[tlb_index].frame;
+            if (tlb_alg == ALG_LRU)
+                tlb[tlb_index].last_used = ++tlb_clock;
+        } else
+#endif
+        {
+            /* TLB miss (ou TLB desligada): consulta a tabela de páginas. */
+            frame = page_table[page];
             if (frame < 0) {
-                status = EXIT_FAILURE;
-                break;
+                page_faults++;
+                frame = handle_page_fault(page, page_alg, backing);
+                if (frame < 0) {
+                    status = EXIT_FAILURE;
+                    break;
+                }
             }
+#if USE_TLB
+            tlb_index = tlb_insert(page, frame, tlb_alg);
+#endif
         }
-        touch_frame(frame);
+        touch_frame(frame); /* LRU de página conta todo acesso */
 
         int physical = frame * PAGE_SIZE + offset;
         int value = physical_memory[frame][offset];
 
         if (fprintf(out, "Virtual address: %u TLB: %d Physical address: %d Value: %d\n",
-                    addr, -1, physical, value) < 0) {
+                    addr, tlb_index, physical, value) < 0) {
             fprintf(stderr, "Erro ao escrever em '%s': %s\n", OUTPUT_FILE, strerror(errno));
             status = EXIT_FAILURE;
             break;
@@ -340,8 +432,10 @@ int main(int argc, char *argv[]) {
     }
 
     if (status == EXIT_SUCCESS)
-        printf("%zu endereços traduzidos (%d frames, página: %s): %d page faults -> %s\n",
-               count, NUM_FRAMES, argv[2], page_faults, OUTPUT_FILE);
+        printf("%zu endereços traduzidos (%d frames, página: %s, TLB: %s): "
+               "%d page faults, %d TLB hits -> %s\n",
+               count, NUM_FRAMES, argv[2], USE_TLB ? argv[3] : "desligada",
+               page_faults, tlb_hits, OUTPUT_FILE);
 
     fclose(backing);
     free(addrs);

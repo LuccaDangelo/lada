@@ -5,6 +5,10 @@ CFLAGS = -Wall -Wextra -g -pthread
 FRAMES ?= 128
 CFLAGS += -DNUM_FRAMES=$(FRAMES)
 
+# TLB ligada (1, padrão) ou desligada (0). Ex.: make TLB=0
+TLB ?= 1
+CFLAGS += -DUSE_TLB=$(TLB)
+
 TARGET = vm
 OBJS = vm.o
 

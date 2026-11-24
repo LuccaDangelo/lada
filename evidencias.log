@@ -121,4 +121,60 @@ Page Fault Rate = 0.539
 TLB Hits = 0
 TLB Hit Rate = 0.000
 PHYS OK
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mgit add Makefile README.md vm.c evidencias.log[27m[46D[27mg[27mi[27mt[27m [27ma[27md[27md[27m [27mM[27ma[27mk[27me[27mf[27mi[27ml[27me[27m [27mR[27mE[27mA[27mD[27mM[27mE[27m.[27mm[27md[27m [27mv[27mm[27m.[27mc[27m [27me[27mv[27mi[27md[27me[27mn[27mc[27mi[27ma[27ms[27m.[27ml[27mo[27mg[?2004l
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mgit commit -m "traducao sem TLB: 256 frames e 128 frames com FIFO e LRU"[27m[72D[27mg[27mi[27mt[27m [27mc[27mo[27mm[27mm[27mi[27mt[27m [27m-[27mm[27m [27m"[27mt[27mr[27ma[27md[27mu[27mc[27ma[27mo[27m [27ms[27me[27mm[27m [27mT[27mL[27mB[27m:[27m [27m2[27m5[27m6[27m [27mf[27mr[27ma[27mm[27me[27ms[27m [27me[27m [27m1[27m2[27m8[27m [27mf[27mr[27ma[27mm[27me[27ms[27m [27mc[27mo[27mm[27m [27mF[27mI[27mF[27mO[27m [27me[27m [27mL[27mR[27mU[27m"[?2004l
+[main f5737c2] traducao sem TLB: 256 frames e 128 frames com FIFO e LRU
+ 4 files changed, 247 insertions(+), 8 deletions(-)
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004hggit push[?2004l
+Enumerating objects: 11, done.
+Counting objects:   9% (1/11)Counting objects:  18% (2/11)Counting objects:  27% (3/11)Counting objects:  36% (4/11)Counting objects:  45% (5/11)Counting objects:  54% (6/11)Counting objects:  63% (7/11)Counting objects:  72% (8/11)Counting objects:  81% (9/11)Counting objects:  90% (10/11)Counting objects: 100% (11/11)Counting objects: 100% (11/11), done.
+Delta compression using up to 10 threads
+Compressing objects:  16% (1/6)Compressing objects:  33% (2/6)Compressing objects:  50% (3/6)Compressing objects:  66% (4/6)Compressing objects:  83% (5/6)Compressing objects: 100% (6/6)Compressing objects: 100% (6/6), done.
+Writing objects:  16% (1/6)Writing objects:  33% (2/6)Writing objects:  50% (3/6)Writing objects:  66% (4/6)Writing objects:  83% (5/6)Writing objects: 100% (6/6)Writing objects: 100% (6/6), 5.56 KiB | 5.56 MiB/s, done.
+Total 6 (delta 3), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas:   0% (0/3)[Kremote: Resolving deltas:  33% (1/3)[Kremote: Resolving deltas:  66% (2/3)[Kremote: Resolving deltas: 100% (3/3)[Kremote: Resolving deltas: 100% (3/3), completed with 3 local objects.[K
+To https://github.com/LuccaDangelo/lada.git
+   fcf532b..f5737c2  main -> main
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mgit log --oneline[27m[17D[27mg[27mi[27mt[27m [27ml[27mo[27mg[27m [27m-[27m-[27mo[27mn[27me[27ml[27mi[27mn[27me[?2004l
+[?1h=[33mf5737c2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m traducao sem TLB: 256 frames e 128 frames com FIFO e LRU[m
+[33mfcf532b[m estrutura inicial e tratamento de erros[m
+[K[?1l>[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004heeix e exit[?2004l
+
+Script done on Mon Nov 23 16:05:45 2026
+Script started on Tue Nov 24 12:16:59 2026
+[1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h[7mmake clean && make && ./vm addresses.txt lru fifo && tail -5 correct.txt[27m
+[7mdiff correct.txt correct_prof.txt && echo "DIFF VAZIO"[27m[K
+[7m./vm addresses.txt fifo fifo && tail -2 correct.txt[27m[K
+[7m./vm addresses.txt fifo lru && tail -2 correct.txt[27m[K
+[7m./vm addresses.txt lru lru && tail -2 correct.txt[27m[K
+[7mmake clean && make TLB=0 && ./vm addresses.txt lru fifo && tail -2 correct.txt[27m[K
+[7mmake clean && make[27m[K[6A[21C[27mm[27ma[27mk[27me[27m [27mc[27ml[27me[27ma[27mn[27m [27m&[27m&[27m [27mm[27ma[27mk[27me[27m [27m&[27m&[27m [27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27mf[27mi[27mf[27mo[27m [27m&[27m&[27m [27mt[27ma[27mi[27ml[27m [27m-[27m5[27m [27mc[27mo[27mr[27mr[27me[27mc[27mt[27m.[27mt[27mx[27mt[1B[27md[27mi[27mf[27mf[27m [27mc[27mo[27mr[27mr[27me[27mc[27mt[27m.[27mt[27mx[27mt[27m [27mc[27mo[27mr[27mr[27me[27mc[27mt[27m_[27mp[27mr[27mo[27mf[27m.[27mt[27mx[27mt[27m [27m&[27m&[27m [27me[27mc[27mh[27mo[27m [27m"[27mD[27mI[27mF[27mF[27m [27mV[27mA[27mZ[27mI[27mO[27m"[1B[27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27mf[27mi[27mf[27mo[27m [27mf[27mi[27mf[27mo[27m [27m&[27m&[27m [27mt[27ma[27mi[27ml[27m [27m-[27m2[27m [27mc[27mo[27mr[27mr[27me[27mc[27mt[27m.[27mt[27mx[27mt[1B[27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27mf[27mi[27mf[27mo[27m [27ml[27mr[27mu[27m [27m&[27m&[27m [27mt[27ma[27mi[27ml[27m [27m-[27m2[27m [27mc[27mo[27mr[27mr[27me[27mc[27mt[27m.[27mt[27mx[27mt[1B[27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27ml[27mr[27mu[27m [27m&[27m&[27m [27mt[27ma[27mi[27ml[27m [27m-[27m2[27m [27mc[27mo[27mr[27mr[27me[27mc[27mt[27m.[27mt[27mx[27mt[1B[27mm[27ma[27mk[27me[27m [27mc[27ml[27me[27ma[27mn[27m [27m&[27m&[27m [27mm[27ma[27mk[27me[27m [27mT[27mL[27mB[27m=[27m0[27m [27m&[27m&[27m [27m.[27m/[27mv[27mm[27m [27ma[27md[27md[27mr[27me[27ms[27ms[27me[27ms[27m.[27mt[27mx[27mt[27m [27ml[27mr[27mu[27m [27mf[27mi[27mf[27mo[27m [27m&[27m&[27m [27mt[27ma[27mi[27ml[27m [27m-[27m2[27m [27mc[27mo[27mr[27mr[27me[27mc[27mt[27m.[27mt[27mx[27mt[1B[27mm[27ma[27mk[27me[27m [27mc[27ml[27me[27ma[27mn[27m [27m&[27m&[27m [27mm[27ma[27mk[27me[?2004l
+rm -f vm *.o correct.txt
+gcc -Wall -Wextra -g -pthread -DNUM_FRAMES=128 -DUSE_TLB=1 -c vm.c -o vm.o
+gcc -Wall -Wextra -g -pthread -DNUM_FRAMES=128 -DUSE_TLB=1 -o vm vm.o
+1000 endereços traduzidos (128 frames, página: lru, TLB: fifo): 539 page faults, 54 TLB hits -> correct.txt
+Number of Translated Addresses = 1000
+Page Faults = 539
+Page Fault Rate = 0.539
+TLB Hits = 54
+TLB Hit Rate = 0.054
+DIFF VAZIO
+1000 endereços traduzidos (128 frames, página: fifo, TLB: fifo): 538 page faults, 54 TLB hits -> correct.txt
+TLB Hits = 54
+TLB Hit Rate = 0.054
+1000 endereços traduzidos (128 frames, página: fifo, TLB: lru): 538 page faults, 55 TLB hits -> correct.txt
+TLB Hits = 55
+TLB Hit Rate = 0.055
+1000 endereços traduzidos (128 frames, página: lru, TLB: lru): 539 page faults, 55 TLB hits -> correct.txt
+TLB Hits = 55
+TLB Hit Rate = 0.055
+rm -f vm *.o correct.txt
+gcc -Wall -Wextra -g -pthread -DNUM_FRAMES=128 -DUSE_TLB=0 -c vm.c -o vm.o
+gcc -Wall -Wextra -g -pthread -DNUM_FRAMES=128 -DUSE_TLB=0 -o vm vm.o
+1000 endereços traduzidos (128 frames, página: lru, TLB: desligada): 539 page faults, 0 TLB hits -> correct.txt
+TLB Hits = 0
+TLB Hit Rate = 0.000
+rm -f vm *.o correct.txt
+gcc -Wall -Wextra -g -pthread -DNUM_FRAMES=128 -DUSE_TLB=1 -c vm.c -o vm.o
+gcc -Wall -Wextra -g -pthread -DNUM_FRAMES=128 -DUSE_TLB=1 -o vm vm.o
 [1m[7m%[27m[1m[0m                                                                                                                                         [0m[27m[24m[Jluccadangelo@Luccas-MacBook-Air lada % [K[?2004h
