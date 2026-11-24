@@ -9,10 +9,14 @@ CFLAGS += -DNUM_FRAMES=$(FRAMES)
 TLB ?= 1
 CFLAGS += -DUSE_TLB=$(TLB)
 
+# Busca na TLB com uma thread por entrada (1, padrão) ou sequencial (0). Só tem efeito com TLB=1.
+THREADS ?= 1
+CFLAGS += -DUSE_THREADS=$(THREADS)
+
 TARGET = vm
 OBJS = vm.o
 
-.PHONY: all clean
+.PHONY: all clean tsan
 
 all: $(TARGET)
 
@@ -22,5 +26,10 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Compila com ThreadSanitizer e executa, para checar condições de corrida.
+tsan:
+	$(CC) $(CFLAGS) -fsanitize=thread -g -O1 -o vm_tsan vm.c
+	./vm_tsan addresses.txt lru fifo
+
 clean:
-	rm -f $(TARGET) *.o correct.txt
+	rm -rf $(TARGET) vm_tsan vm_tsan.dSYM *.o correct.txt

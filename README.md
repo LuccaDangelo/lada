@@ -4,53 +4,84 @@ Implementação 6 de Infraestrutura de Software: simulador de gerenciador de mem
 baseado no projeto "Designing a Virtual Memory Manager" (Silberschatz, 10ª ed.).
 
 - Endereços lógicos de 16 bits (página = bits 8–15, offset = bits 0–7)
-- Páginas/frames de 256 bytes, tabela de páginas com 256 entradas, TLB com 16 entradas
-- Valores lidos de `BACKING_STORE.bin`; saída gravada em `correct.txt`
+- Páginas/frames de 256 bytes, tabela de páginas com 256 entradas, 128 frames
+- TLB de 16 entradas; a busca na TLB usa uma thread por entrada (`pthread`)
+- Substituição de página e da TLB: `fifo` ou `lru`
 
-## Compilar
+Relatório: [lada.pdf](lada.pdf)
 
-```sh
-make          # gera o executável ./vm
-make clean    # remove o executável, os .o e o correct.txt
-```
+## Arquivos
 
-### Número de frames
+- `vm.c` — código-fonte completo
+- `Makefile` — compilação e opções de teste
 
-A memória física tem **128 frames por padrão** (o que o enunciado pede), então `make` sozinho
-já gera a versão de entrega. O número de frames pode ser trocado na compilação com a variável
-`FRAMES`, por exemplo para testar com memória física igual ao espaço virtual (sem substituição):
+Arquivos necessários na pasta para executar (não versionados):
 
-```sh
-make clean && make FRAMES=256   # 256 frames (fluxo de teste)
-make clean && make              # volta para o padrão de 128 frames
-```
+- `BACKING_STORE.bin` — armazenamento secundário
+- o arquivo de endereços (ex.: `addresses.txt`)
 
-Sempre rode `make clean` ao trocar `FRAMES`: o `make` não detecta a mudança da variável e
-reaproveitaria o `vm.o` antigo.
-
-### TLB
-
-A TLB (16 entradas, substituição `fifo` ou `lru` conforme o 3º argumento) vem **ligada por
-padrão**. Para demonstrar o fluxo sem TLB (só tabela de páginas), compile com `TLB=0`:
+## Compilar e executar
 
 ```sh
-make clean && make TLB=0   # sem TLB: coluna "TLB" = -1 e TLB Hits = 0
-make clean && make         # volta para o padrão, com TLB
+make                              # gera ./vm
+./vm addresses.txt lru fifo       # <endereços> <subst. de página> <subst. da TLB>
+make clean                        # remove vm, vm_tsan, *.o e correct.txt
 ```
 
-Com `TLB=0` o 3º argumento continua obrigatório e validado, mas não tem efeito. Assim como em
-`FRAMES`, rode `make clean` ao trocar `TLB`.
+A saída é gravada em `correct.txt`.
 
-## Executar
+## Opções de teste
 
-```sh
-./vm <arquivo_enderecos> <fifo|lru> <fifo|lru>
+| Comando | Efeito |
+|---|---|
+| `make FRAMES=256` | memória física com 256 frames (sem substituição de página) |
+| `make TLB=0` | sem TLB: coluna `TLB` = -1 e `TLB Hits = 0` |
+| `make THREADS=0` | busca sequencial na TLB, sem threads (só faz sentido com `TLB=1`) |
+| `make tsan` | compila `vm_tsan` com ThreadSanitizer e roda `./vm_tsan addresses.txt lru fifo` |
+
+Rode sempre `make clean` antes de trocar uma opção: o `make` não detecta a mudança das variáveis
+e reaproveitaria o `vm.o` antigo. Ex.: `make clean && make THREADS=0`.
+
+## Formato do correct.txt
+
+Uma linha por endereço, seguida das estatísticas:
+
+```
+Virtual address: 16916 TLB: 0 Physical address: 20 Value: 0
+...
+Number of Translated Addresses = 1000
+Page Faults = 539
+Page Fault Rate = 0.539
+TLB Hits = 54
+TLB Hit Rate = 0.054
 ```
 
-- 2º argumento: algoritmo de substituição de página (`fifo` ou `lru`)
-- 3º argumento: algoritmo de substituição da TLB (`fifo` ou `lru`)
+`TLB` é o índice da entrada da TLB usada (encontrada no hit ou onde a tradução foi inserida no
+miss).
 
-Exemplo: `./vm addresses.txt lru fifo`
+## Resultados
 
-O arquivo `BACKING_STORE.bin` deve estar no diretório atual. O arquivo de endereços deve ter um
-número inteiro entre 0 e 65535 por linha (linhas vazias são ignoradas).
+Com `./vm addresses.txt lru fifo` (128 frames): **539 page faults e 54 TLB hits**, saída
+idêntica à de referência (`diff` vazio), tanto com threads quanto com `THREADS=0`.
+
+## Tratamento de erros
+
+O programa imprime uma mensagem em `stderr` e termina com código diferente de 0 quando:
+
+- o número de argumentos é diferente de 3;
+- o algoritmo de página ou da TLB não é `fifo` nem `lru` (somente minúsculas);
+- o arquivo de endereços não existe ou não pode ser lido;
+- uma linha do arquivo não é um inteiro não negativo, ou o endereço está fora de 0..65535
+  (a mensagem informa a linha);
+- o arquivo de endereços não contém nenhum endereço;
+- `BACKING_STORE.bin` não existe, não pode ser lido ou está truncado;
+- `correct.txt` não pode ser criado, escrito ou fechado;
+- falta memória ao ler os endereços;
+- `pthread_create` ou `pthread_join` falha na busca da TLB.
+
+Todo o arquivo de endereços é validado antes do processamento.
+
+## Sistema usado
+
+macOS (Darwin 25.5.0, arm64), compilador `gcc` → Apple clang version 21.0.0
+(clang-2100.1.1.101), conforme `gcc --version`.

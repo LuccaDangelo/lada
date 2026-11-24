@@ -7,8 +7,8 @@
  *   2º argumento: algoritmo de substituição de página
  *   3º argumento: algoritmo de substituição da TLB
  *
- * Etapa atual: tradução de endereços com substituição de página (FIFO ou LRU) e
- * TLB de 16 entradas com substituição FIFO ou LRU (ainda sem threads).
+ * Tradução de endereços com substituição de página (FIFO ou LRU) e TLB de 16
+ * entradas com substituição FIFO ou LRU. A busca na TLB usa uma thread por entrada.
  *
  * O número de frames é definido na compilação (padrão 128):
  *   make              -> 128 frames
@@ -17,10 +17,15 @@
  * A TLB pode ser desligada na compilação (fluxo sem TLB: coluna "TLB" = -1, 0 hits):
  *   make              -> com TLB (padrão)
  *   make TLB=0        -> sem TLB
+ *
+ * A busca na TLB pode ser feita sem threads (busca sequencial), só com TLB=1:
+ *   make              -> uma thread por entrada da TLB (padrão)
+ *   make THREADS=0    -> busca sequencial
  */
 
 #include <ctype.h>
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +42,9 @@
 #define MAX_LOGICAL_ADDR   65535
 #ifndef USE_TLB
 #define USE_TLB            1
+#endif
+#ifndef USE_THREADS
+#define USE_THREADS        1
 #endif
 
 #if NUM_FRAMES < 1
@@ -218,6 +226,7 @@ static int lru_victim(void) {
 }
 
 #if USE_TLB
+#if !USE_THREADS
 /* Busca sequencial na TLB. Retorna o índice da entrada válida da página, ou -1. */
 static int tlb_lookup(int page) {
     for (int i = 0; i < TLB_SIZE; i++)
@@ -225,6 +234,68 @@ static int tlb_lookup(int page) {
             return i;
     return -1;
 }
+#endif
+
+#if USE_THREADS
+/* Argumento de cada thread da busca: compara só a entrada "index" da TLB. */
+typedef struct {
+    int index;
+    int page;
+    int *found; /* array local de tlb_lookup_threaded; a thread escreve só em found[index] */
+} tlb_search_arg_t;
+
+static void *tlb_search_entry(void *arg) {
+    tlb_search_arg_t *a = arg;
+    a->found[a->index] = (tlb[a->index].valid && tlb[a->index].page == a->page);
+    return NULL;
+}
+
+/*
+ * Busca na TLB com uma thread por entrada (TLB_SIZE threads). Ninguém escreve na TLB
+ * durante a busca e cada thread grava só a sua posição de found[], então não há lock.
+ * Retorna o índice encontrado, -1 se não encontrado, ou -2 em erro (já reportado).
+ */
+static int tlb_lookup_threaded(int page) {
+    pthread_t threads[TLB_SIZE];
+    tlb_search_arg_t args[TLB_SIZE];
+    int found[TLB_SIZE] = {0};
+    int created = 0;
+    int error = 0;
+    int rc;
+
+    for (int i = 0; i < TLB_SIZE; i++) {
+        args[i].index = i;
+        args[i].page = page;
+        args[i].found = found;
+        rc = pthread_create(&threads[i], NULL, tlb_search_entry, &args[i]);
+        if (rc != 0) {
+            fprintf(stderr, "Erro: pthread_create falhou ao criar a thread da entrada %d "
+                    "da TLB: %s\n", i, strerror(rc));
+            error = 1;
+            break;
+        }
+        created++;
+    }
+
+    /* Espera todas as threads criadas, mesmo em caso de erro na criação. */
+    for (int i = 0; i < created; i++) {
+        rc = pthread_join(threads[i], NULL);
+        if (rc != 0) {
+            fprintf(stderr, "Erro: pthread_join falhou na thread da entrada %d da TLB: %s\n",
+                    i, strerror(rc));
+            error = 1;
+        }
+    }
+
+    if (error)
+        return -2;
+
+    for (int i = 0; i < TLB_SIZE; i++)
+        if (found[i])
+            return i;
+    return -1;
+}
+#endif
 
 /* Insere {page, frame} na TLB conforme o algoritmo. Retorna o índice usado. */
 static int tlb_insert(int page, int frame, algorithm_t tlb_alg) {
@@ -375,7 +446,15 @@ int main(int argc, char *argv[]) {
         int tlb_index = -1;
 
 #if USE_TLB
+#if USE_THREADS
+        tlb_index = tlb_lookup_threaded(page);
+        if (tlb_index == -2) {
+            status = EXIT_FAILURE;
+            break;
+        }
+#else
         tlb_index = tlb_lookup(page);
+#endif
         if (tlb_index >= 0) {
             /* TLB hit */
             tlb_hits++;
@@ -432,9 +511,10 @@ int main(int argc, char *argv[]) {
     }
 
     if (status == EXIT_SUCCESS)
-        printf("%zu endereços traduzidos (%d frames, página: %s, TLB: %s): "
+        printf("%zu endereços traduzidos (%d frames, página: %s, TLB: %s%s): "
                "%d page faults, %d TLB hits -> %s\n",
                count, NUM_FRAMES, argv[2], USE_TLB ? argv[3] : "desligada",
+               USE_TLB ? (USE_THREADS ? ", busca com threads" : ", busca sequencial") : "",
                page_faults, tlb_hits, OUTPUT_FILE);
 
     fclose(backing);
